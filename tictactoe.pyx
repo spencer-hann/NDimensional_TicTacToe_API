@@ -83,7 +83,7 @@ cdef class Game:
             if place == self.dim: break
 
             if coord[place] == 0: coord[place] = n
-            opposing.add(*coord)
+            opposing.add(tuple(coord))
 
         return opposing
 
@@ -103,7 +103,7 @@ cdef class Game:
         for corner1 in corners:
             for corner2 in corners:
                 if corner1 is corner2: continue
-                self._lines[*corner1,*corner2] = 0
+                self._lines[tuple(corner1),tuple(corner2)] = 0
 
         # all rows and columns
         for vec in self._unit_vectors:
@@ -112,7 +112,7 @@ cdef class Game:
             while i < size-1:
                 init += vec
                 for o in self._gen_opposing(init):
-                    self._lines[*init,o] = 0
+                    self._lines[tuple(init),o] = 0
 
     cdef void _update_lines(Game self, int[::1] coord):
         """ takes in a board position with a newly placed marker,
