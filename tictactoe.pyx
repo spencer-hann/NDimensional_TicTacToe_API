@@ -16,8 +16,8 @@ DEF omark = 'O'
 DEF xpoint = +1
 DEF opoint = -1
 
-DEF xmarkwin = '+'
-DEF omarkwin = '0'
+DEF xwinmark = '+'
+DEF owinmark = '0'
 
 cdef class Game:
     cdef readonly np.ndarray board
@@ -231,6 +231,11 @@ cdef class Game:
         cdef int[::1] slope
         cdef ssize_t i
 
+        if self.marker == xmark:
+            marker = xwinmark
+        else:
+            marker = owinmark
+
         for i,(a,b) in enumerate(zip(ep1,ep2)):
             A[i] = a
             B[i] = b
@@ -238,7 +243,7 @@ cdef class Game:
         slope = self._determine_slope(A,B)
 
         for i in range(self.size):
-            self.board[tuple(A)] = '!'
+            self.board[tuple(A)] = marker
             A += slope
 
     cdef str place_marker(self, marker_location):
