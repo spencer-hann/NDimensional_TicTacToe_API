@@ -2,7 +2,9 @@ from tictactoe import Game
 from example_agents import RandomAgent
 
 def two_player_game(g):
+    print("building game...",end=' ')
     g.display_board()
+    print("done!")
 
     turn = 0
     while 1:
@@ -16,7 +18,9 @@ def two_player_game(g):
             break
 
 def human_vs_ai_game(game,ai):
+    print("building game...",end=' ')
     game.display_board()
+    print("done!")
 
     turn = 0
     while 1:
@@ -36,7 +40,9 @@ def human_vs_ai_game(game,ai):
             break
 
 def ai_vs_ai_game(game,ai1,ai2):
+    print("building game...",end=' ')
     game.display_board()
+    print("done!")
 
     turn = 0
     while 1:
@@ -57,5 +63,6 @@ def ai_vs_ai_game(game,ai1,ai2):
 
 
 if __name__ == "__main__":
-    g = Game(size=3,dim=9)
-    ai_vs_ai_game(g,RandomAgent(),RandomAgent())
+    g = Game(size=3,dim=3)
+    human_vs_ai_game(g,RandomAgent())
+    #ai_vs_ai_game(g,RandomAgent(),RandomAgent())
