@@ -30,9 +30,6 @@ cdef class Game:
     cdef readonly dict _lines
     cdef np.ndarray _endpoints
 
-    # class var for access outside the module
-    empty_square = blank_square
-
     # default to 3x3 board, 'X' goes first
     def __cinit__(Game self, int size=3, int dim=2):
         self.marker = xmark
@@ -116,20 +113,17 @@ cdef class Game:
 
         return opposing
 
-    cdef void _fill_in_endpoints(self, int[::1] init, int[::1] terminal):
-        """ takes in two endpoints and traverses each cell that lays on the
-            line between them, adding that endpoint tuple to the self._endpoints
-            matrix/tensor, which stores a list of valid endpoints for every cell.
-            self._endpoints is used too look-up/update scores (how many in a
-            row sofar) when a new marker is placed in a cell. """
-        cdef int[::1] slope = np.empty(init.shape[0],dtype=np.intc)
-        cdef ssize_t i
-        cdef tuple t_init = tuple(init) # used for indexing
-        cdef tuple t_terminal = tuple(terminal) # used for indexing
-        cdef int[::1] moving_square
-        cdef tuple t_moving_square
+    def determine_slope(self, init, terminal):
+        return np.asarray(
+                self._determine_slope(
+                    np.asarray(init, dtype=np.intc),
+                    np.asarray(terminal, dtype=np.intc)
+                    )
+                )
 
-        for i in range(init.shape[0]):
+    cdef int[::1] _determine_slope(self, int[::1] init, int[::1] terminal):
+        cdef int[::1] slope = np.empty(self.dim,dtype=np.intc)
+        for i in range(self.dim):
             if init[i] == terminal[i]:
                 slope[i] = 0
             elif init[i] < terminal[i]:
@@ -137,6 +131,22 @@ cdef class Game:
             else: # init[i] > terminal[i]
                 slope[i] = -1
 
+        return slope
+
+    cdef void _fill_in_endpoints(self, int[::1] init, int[::1] terminal):
+        """ takes in two endpoints and traverses each cell that lays on the
+            line between them, adding that endpoint tuple to the self._endpoints
+            matrix/tensor, which stores a list of valid endpoints for every cell.
+            self._endpoints is used too look-up/update scores (how many in a
+            row sofar) when a new marker is placed in a cell. """
+        cdef ssize_t i
+        cdef tuple t_init = tuple(init) # used for indexing
+        cdef tuple t_terminal = tuple(terminal) # used for indexing
+        cdef int[::1] moving_square
+        cdef tuple t_moving_square
+        cdef int[::1] slope
+
+        slope = self._determine_slope(init,terminal)
         moving_square = init.copy()
 
         while not np.array_equal(moving_square,terminal):
@@ -165,6 +175,9 @@ cdef class Game:
             column/diagonal """
         cdef np.ndarray[int,ndim=1] init = np.zeros(self.dim, dtype=np.intc)
         cdef np.ndarray[int,ndim=1] terminal = np.empty(self.dim, dtype=np.intc)
+        cdef np.ndarray[int,ndim=1] tmp
+        cdef int[::1] vec1
+        cdef int[::1] vec2
         cdef list corners = self._gen_corners()
         cdef ssize_t i,j
 
@@ -176,44 +189,59 @@ cdef class Game:
                 self._lines[tuple(corner1),tuple(corner2)] = 0
                 self._fill_in_endpoints(corner1, corner2)
 
-        # all rows and columns
-        for vec in self._unit_vectors:
-            init[:] = 0
-            # move along one dimension at a time
-            for i in range(self.size-1):
-                init += vec
-                for opp in self._gen_opposing(init):
-                    self._lines[tuple(init),tuple(opp)] = 0
-                    self._fill_in_endpoints(init,opp)
+        tmp = np.empty(self.dim, dtype=np.intc)
+        for vec1 in self._unit_vectors:
+            for vec2 in self._unit_vectors:
+                if np.array_equal(vec1,vec2): continue
+                init[:] = 0
+                # move along one dimension at a time
+                for i in range(self.size):
+                    tmp[:] = init[:]
+                    for j in range(self.size):
+                        for opp in self._gen_opposing(init):
+                            self._lines[tuple(init),tuple(opp)] = 0
+                            self._fill_in_endpoints(init,opp)
+                        init += vec2
+                    #for j in range(self.size): init -= vec2
+                    init[:] = tmp[:]
+                    init += vec1
 
-    cdef void _update_lines(Game self, int[::1] coord):
-        """ takes in a board position with a recently placed marker,
-            updates self._lines with new scores (number of certain marker
-            on a given line). """
-        cdef int[::1] init = coord.copy()
-        cdef int[::1] terminal = coord.copy()
-        cdef int n = self.size-1
-        cdef int score_change
+    #cdef void _update_lines(Game self, int[::1] coord):
+    #    """ takes in a board position with a recently placed marker,
+    #        updates self._lines with new scores (number of certain marker
+    #        on a given line). """
+    #    cdef int[::1] init = coord.copy()
+    #    cdef int[::1] terminal = coord.copy()
+    #    cdef int n = self.size-1
+    #    cdef int score_change
 
-        if    self.board[tuple(coord)] == xmark: score_change = +1
-        elif  self.board[tuple(coord)] == omark: score_change = -1
-        else: raise Exception("cannot update lines with a blank square")
+    #    if    self.board[tuple(coord)] == xmark: score_change = xpoint
+    #    elif  self.board[tuple(coord)] == omark: score_change = opoint
+    #    else: raise Exception("cannot update lines with a blank square")
 
-        for endpoint_pair in self._endpoint[tuple(coord)]:
-            self._lines[endpoint_pair] += 1
+    #    for endpoint_pair in self._endpoint[tuple(coord)]:
+    #        self._lines[endpoint_pair] += score_change
 
-        # determine the non-diagonal lines
-        # that 'coord' belongs to
-#        for i in range(coord.shape[0]):
-#            init[i] = 0
-#            terminal[i] = n
-#
-#            self._lines[tuple(init),tuple(terminal)] += score_change
-#
-#            init[i] = coord[i]
-#            terminal[i] = coord[i]
-#
-    cpdef str place_marker(self, marker_location):
+    def is_empty_here(self, tuple square):
+        return self.board[square] == blank_square
+
+    def highlight_winner(self, tuple ep1, tuple ep2):
+        cdef np.ndarray[int] A = np.empty(self.dim,dtype=np.intc)
+        cdef int[::1] B = np.empty(self.dim,dtype=np.intc)
+        cdef int[::1] slope
+        cdef ssize_t i
+
+        for i,(a,b) in enumerate(zip(ep1,ep2)):
+            A[i] = a
+            B[i] = b
+
+        slope = self._determine_slope(A,B)
+
+        for i in range(self.size):
+            self.board[tuple(A)] = '!'
+            A += slope
+
+    cdef str place_marker(self, marker_location):
         cdef int point
         cdef list lines
 
@@ -228,13 +256,19 @@ cdef class Game:
 
         self.board[marker_location] = self.marker
 
+        if self._endpoints[marker_location] == None:
+            self.board[marker_location] = '*'
+            return None
+
         for endpnt_pair in self._endpoints[marker_location]:
             if endpnt_pair not in self._lines:
+                self._lines[endpnt_pair] = point
+            elif point * self._lines[endpnt_pair] < 0: # heterogenous line
                 self._lines[endpnt_pair] = 0
-            #print(endpnt_pair,self._lines[endpnt_pair],point)
-            self._lines[endpnt_pair] += point
-            #print(endpnt_pair,self._lines[endpnt_pair])
+            else:
+                self._lines[endpnt_pair] += point
             if abs(self._lines[endpnt_pair]) == self.size:
+                self.highlight_winner(*endpnt_pair)
                 return self.marker # current player wins!!!
 
         return None# scores updated, no winner yet
@@ -245,6 +279,11 @@ cdef class Game:
             self.marker = omark
         else:
             self.marker = xmark
+
+        if blank_square not in self.board:
+            print("Cat's game")
+            # TODO
+            sys.exit() # this is bad. put something else here later
 
         if move == None:
             print(f"Player {self.marker}, make your move...")
