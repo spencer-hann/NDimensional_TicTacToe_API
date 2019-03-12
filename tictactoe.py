@@ -56,8 +56,11 @@ def ai_vs_ai_game(game,ai1,ai2):
 
 if __name__ == "__main__":
     print("building game...",end=' ')
-    g = Game(size=4,dim=3)
+    g = Game(size=9,dim=4)
     print("done!")
-    #human_vs_ai_game(g,RandomAgent())
-    #ai_vs_ai_game(g,RandomAgent(), NaiveBestFirstAgent('X'))
-    ai_vs_ai_game(g,RandomAgent(), NaiveBestFirstAgent('X',smart_block=True))
+    #human_vs_ai_game(g,NaiveBestFirstAgent('X',smart_block=True))
+    for i in range(1):
+        #ai_vs_ai_game(g,RandomAgent(), RandomAgent())
+        #ai_vs_ai_game(g,RandomAgent(), NaiveBestFirstAgent('X'))
+        ai_vs_ai_game(g,RandomAgent(), NaiveBestFirstAgent('X',smart_block=True))
+        g.new_game()

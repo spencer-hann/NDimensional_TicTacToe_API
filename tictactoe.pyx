@@ -8,16 +8,16 @@ cimport numpy as np
 import pandas as pd
 import sys
 
-DEF blank_square = '_'
+DEF blank_square = b'_'
 
-DEF xmark = 'X'
-DEF omark = 'O'
+DEF xmark = b'X'
+DEF omark = b'O'
 
 DEF xpoint = +1
 DEF opoint = -1
 
-DEF xwinmark = '+'
-DEF owinmark = '0'
+DEF xwinmark = b'+'
+DEF owinmark = b'0'
 
 cdef class Game:
     cdef readonly np.ndarray board
@@ -25,16 +25,18 @@ cdef class Game:
     #cdef int[::1] _init_seed
     cdef readonly int size
     cdef readonly int dim
-    cdef readonly str marker
+    cdef readonly bytes marker
     cdef set _unit_vectors
     cdef readonly dict _lines
+    cdef readonly bint game_over
     cdef np.ndarray _endpoints
 
     # default to 3x3 board, 'X' goes first
     def __cinit__(Game self, int size=3, int dim=2):
         self.marker = xmark
+        self.game_over = False
 
-        self.board = np.empty([size]*dim,dtype=str)
+        self.board = np.empty([size]*dim,dtype=bytes)
         self.board.fill(blank_square)
         self.size = size
         self.dim = dim
@@ -51,6 +53,16 @@ cdef class Game:
         # in the traditional game, 3x3, getting 3-in-a-row wins
         self._lines = {}
         self._init_lines()
+
+    @staticmethod
+    def determine_point_value(bytes marker):
+        """ returns the point value added to a line when the a
+            marker of the type passed in is placed on that line.
+            This is useful for determining if an agent is trying to
+            minimize or maximize line scores """
+        if marker == xmark:
+            return xpoint
+        return opoint
 
     cdef void _gen_unit_vectors(self):
         """ creates all unit vectors in self.dim-dimensional space.
@@ -194,7 +206,7 @@ cdef class Game:
             for vec2 in self._unit_vectors:
                 if np.array_equal(vec1,vec2): continue
                 init[:] = 0
-                # move along one dimension at a time
+                # move along one dimension at a t  ime
                 for i in range(self.size):
                     tmp[:] = init[:]
                     for j in range(self.size):
@@ -223,36 +235,47 @@ cdef class Game:
     #        self._lines[endpoint_pair] += score_change
 
     def is_empty_here(self, tuple square):
+        r"""returns True, if legal move
+            returns False, if square is already occupied
+            throws exceptions for bad indices """
         return self.board[square] == blank_square
 
-    def highlight_winner(self, tuple ep1, tuple ep2):
+    cdef void highlight_winner(self, tuple ep1, tuple ep2):
+        r"""Takes the endpoint pair for the winning line at the end of
+            the game.
+            Changes all markers on board to lowercase, except for those,
+            on the winning line, between `ep1` and `ep2`"""
         cdef np.ndarray[int] A = np.empty(self.dim,dtype=np.intc)
         cdef int[::1] B = np.empty(self.dim,dtype=np.intc)
         cdef int[::1] slope
         cdef ssize_t i
 
-        if self.marker == xmark:
-            marker = xwinmark
-        else:
-            marker = owinmark
+        if not self.game_over:
+            raise Exception("In `Game.highlight_winner`: Game is not yet over.")
 
+        # convert tuples back to np.ndarrays
         for i,(a,b) in enumerate(zip(ep1,ep2)):
             A[i] = a
             B[i] = b
 
         slope = self._determine_slope(A,B)
 
+        self.board = np.char.lower(self.board)
+        #self.board = np.char.lower(self.board.astype(unicode))
+
         for i in range(self.size):
-            self.board[tuple(A)] = marker
+            #self.board[tuple(A)] = marker
+            self.board[tuple(A)] = self.board[tuple(A)].upper()
             A += slope
 
-    cdef str place_marker(self, marker_location):
+    cdef str _place_marker(self, tuple marker_location):
+        r"""this function is used in the `Game.take_turn` function, and
+            should not be called directly"""
         cdef int point
         cdef list lines
 
-        marker_location = tuple(marker_location)
         if self.board[marker_location] != blank_square:
-            return False
+            return None
 
         if self.marker == xmark:
             point = xpoint
@@ -273,22 +296,49 @@ cdef class Game:
             else:
                 self._lines[endpnt_pair] += point
             if abs(self._lines[endpnt_pair]) == self.size:
-                self.highlight_winner(*endpnt_pair)
-                return self.marker # current player wins!!!
+                self.game_over = True
+                self.highlight_winner(endpnt_pair[0],endpnt_pair[1])
+                return self.marker.decode("utf-8") # current player wins!!!
+
+        if blank_square not in self.board:
+            print("Cat's game")
+            return 'C'
 
         return None# scores updated, no winner yet
 
     def take_turn(self, move=None):
-        """ if `move` is None, the user will be prompted to make a move """
+        r"""Args:
+                move: Iterable (is optional)
+
+            return type:
+                str or None
+                may return int or throw exception for errors
+
+            `move` sould be an Iterable containing the int coordinates at
+            which to place the marker. Default value is `None`.
+
+            If `move` is None, the user will be prompted to make a move.
+            AI players should always specify a move.
+
+            If the move was a winning move, the winning player's marker is
+            returned as a Python str.
+
+            If the move was a legal, non-winning moves, `None` will be returned.
+
+            If the board is full, a capital 'C' will be returned,
+            representing a cat's game.
+
+            If the board location is already occupied by another marker, the
+            marker will not be placed, and `None` will be returned.
+            Agents should use the `Game.is_empty_here` function to validate
+            potential moves before making them.
+
+            Bad coordinates are not handled, so this will result in numpy
+            throwing some bad index exception."""
         if self.marker == xmark:
             self.marker = omark
         else:
             self.marker = xmark
-
-        if blank_square not in self.board:
-            print("Cat's game")
-            # TODO
-            sys.exit() # this is bad. put something else here later
 
         if move == None:
             print(f"Player {self.marker}, make your move...")
@@ -299,26 +349,88 @@ cdef class Game:
             if ',' in move: move = move.split(',')
             else: move = move.split(' ')
 
-            move = tuple(map(int,move))
+            move = map(int,move)
 
-        return self.place_marker(move)
+        move = tuple(move)
 
-    def display_board(self):
+        if self.board[move] != blank_square:
+            return -1
+
+        return self._place_marker(move)
+
+    def display_board(self, turn_number=False):
+        r""" prints board to console, if desired `turn_number` will be
+            displayed about the board """
+        if self.dim > 3: return # don't want to display in 4+ dimensions...
+
+        cdef np.ndarray str_board = self.board.astype(unicode)
+
+        if turn_number is not False:
+            print('-'*20,"Turn",turn_number,'-'*20)
+
         if self.dim < 3:
-            print(pd.DataFrame(self.board))
+            print(pd.DataFrame(str_board))
             return
-
-        if self.dim > 3: return # don't want to display in 4 dimensions...
 
         for i in range(self.size):
             print("\nLayer",i)
-            print(pd.DataFrame(self.board[i]))
+            print(pd.DataFrame(str_board[i]))
 
-    cpdef tuple state_hash(self):
-        return tuple(self.board.flatten())
+    cpdef np.ndarray state(self):
+        r"""returns a flattened copy of the game board as an np.ndarray"""
+        return self.board.flatten()
 
+    cpdef bytes state_hash(self):
+        r"""returns a flattened copy of the game board converted
+            into a `bytes` object for hashing """
+        return bytes(self.board.flatten())
 
+    def new_game(self):
+        r""" when a game is over, this will quickly clear the board
+            and reset other aspect of the game object's internal state.
+            This is better than re-building the game from scratch,
+            which may take a non-trivial amount of time for large
+            boards in higher dimensions """
+        self.board.fill(blank_square)
 
+        for key in self._lines:
+            self._lines[key] = 0
+
+        self.game_over = False
+
+    def is_full(self):
+        return blank_square not in self.board
+
+    def random_empty_square(self):
+        r"""returns the location of random empty square as a
+            numpy array. If the board is full (no empty squares)
+            an Exception is thrown"""
+        cdef:
+            np.ndarray coord = np.zeros(self.dim, dtype=np.intc)
+            char[::1] flat = self.board.flatten()
+            int i = np.random.randint(0,flat.shape[0])
+            int i_init = i
+            int i_dim = self.dim - 1
+            int coord_dim = 0
+            int chunk = self.size ** i_dim
+
+        while 1:
+            i += 1
+            if i == flat.shape[0]: # start from beginning
+                i = 0
+            if i == i_init: # made full loop with no blank squares
+                raise Exception("In `Game.random_empty_square`: game board is full")
+            if flat[i] == blank_square: # done
+                break
+
+        while coord_dim < self.dim:
+            coord[coord_dim] = i // chunk
+            i %= chunk
+            coord_dim += 1
+            i_dim -= 1
+            chunk = self.size ** i_dim
+
+        return coord
 
 #    cdef _gen_seeds(self, int[::1] seed, int dim):
 #        if dim == self.dim: return
