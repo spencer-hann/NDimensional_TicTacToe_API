@@ -221,22 +221,6 @@ cdef class Game:
                     init[:] = tmp[:]
                     init += vec1
 
-    #cdef void _update_lines(Game self, int[::1] coord):
-    #    """ takes in a board position with a recently placed marker,
-    #        updates self._lines with new scores (number of certain marker
-    #        on a given line). """
-    #    cdef int[::1] init = coord.copy()
-    #    cdef int[::1] terminal = coord.copy()
-    #    cdef int n = self.size-1
-    #    cdef int score_change
-
-    #    if    self.board[tuple(coord)] == xmark: score_change = xpoint
-    #    elif  self.board[tuple(coord)] == omark: score_change = opoint
-    #    else: raise Exception("cannot update lines with a blank square")
-
-    #    for endpoint_pair in self._endpoint[tuple(coord)]:
-    #        self._lines[endpoint_pair] += score_change
-
     def is_empty_here(self, tuple square):
         r"""returns True, if legal move
             returns False, if square is already occupied
@@ -286,6 +270,11 @@ cdef class Game:
             point = opoint
 
         self.board[marker_location] = self.marker
+
+        # for debugging _endpoints
+        if self._endpoints[marker_location] == None:
+            self.board[marker_location] = b'*'
+            return None
 
         for endpnt_pair in self._endpoints[marker_location]:
             if endpnt_pair not in self._lines:
@@ -337,17 +326,6 @@ cdef class Game:
             self.marker = omark
         else:
             self.marker = xmark
-
-        #if move == None:
-        #    print(f"Player {self.marker}, make your move...")
-        #    move = input().strip()
-
-        #    if move[0] == '(': move = move[1:]
-        #    if move[-1] == ')': move = move[:-1]
-        #    if ',' in move: move = move.split(',')
-        #    else: move = move.split(' ')
-
-        #    move = map(int,move)
 
         move = tuple(move)
 

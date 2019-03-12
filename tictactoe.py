@@ -34,7 +34,7 @@ def play_game(
 
 if __name__ == "__main__":
     print("building game...",end=' ')
-    g = Game(size=4,dim=9)
+    g = Game(size=3,dim=9)
     print("done!")
     winners = list()
 
