@@ -1,66 +1,49 @@
-from tictactoe import Game
+# github.com/spencer-hann/NDimensional_TicTacToe_API
+# Author: Spencer Hann
+
+from tictactoe import Game, HumanPlayer
 from example_agents import RandomAgent, NaiveBestFirstAgent
 
-def two_player_game(g):
-    g.display_board()
+def play_game(
+        game,
+        players=[
+            HumanPlayer(),
+            NaiveBestFirstAgent('X',smart_block=True)
+            ],
+        check_every_n_turns=500
+        ):
+    assert len(players) == 2, "Only two players"
 
-    turn = 0
-    while 1:
-        turn += 1
-        print('-'*10,"Turn",turn,'-'*10)
-        winner = g.take_turn()
-        g.display_board()
-        if winner:
-            print(winner,"is the winner!!!")
-            break
-
-def human_vs_ai_game(game,ai):
     game.display_board()
 
     turn = 0
     while 1:
-        turn += 1
-        print('-'*10,"Turn",turn,'-'*10)
-        winner = game.take_turn() # for user
-        game.display_board()
-        if winner:
-            print(winner,"is the winner!!!")
-            break
+        for player in players:
+            turn += 1
+            print('-'*10,"Turn",turn,'-'*10)
 
-        winner = game.take_turn(ai.next_move(game))
-        game.display_board()
-        if winner:
-            print(winner,"is the winner!!!")
-            break
+            winner = game.take_turn(player.next_move(game))
+            game.display_board()
 
-def ai_vs_ai_game(game,ai1,ai2):
-    game.display_board()
-
-    turn = 0
-    while 1:
-        turn += 1
-        print('-'*10,"Turn",turn,'-'*10)
-        winner = game.take_turn(ai1.next_move(game))
-        game.display_board()
-        if winner:
-            print(winner,"is the winner!!!")
-            break
-
-        winner = game.take_turn(ai2.next_move(game))
-        print() # new line
-        game.display_board()
-        if winner:
-            print(winner,"is the winner!!!")
-            break
-
+            if winner == 'C':
+                print("Cat's game...")
+                return winner
+            elif winner:
+                print(winner,"is the winner!!!")
+                return winner
 
 if __name__ == "__main__":
     print("building game...",end=' ')
-    g = Game(size=9,dim=4)
+    g = Game(size=4,dim=9)
     print("done!")
-    #human_vs_ai_game(g,NaiveBestFirstAgent('X',smart_block=True))
-    for i in range(1):
-        #ai_vs_ai_game(g,RandomAgent(), RandomAgent())
-        #ai_vs_ai_game(g,RandomAgent(), NaiveBestFirstAgent('X'))
-        ai_vs_ai_game(g,RandomAgent(), NaiveBestFirstAgent('X',smart_block=True))
+    winners = list()
+
+    for i in range(10):
+        #w = play_game(g)
+        #w = play_game(g,players=[RandomAgent(), RandomAgent()])
+        #w = play_game(g,players=[RandomAgent(), NaiveBestFirstAgent('X')])
+        w = play_game(g,players=[RandomAgent(), NaiveBestFirstAgent('X',smart_block=True)])
         g.new_game()
+        winners.append(w)
+
+    print(winners)

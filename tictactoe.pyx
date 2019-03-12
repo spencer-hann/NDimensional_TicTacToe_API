@@ -1,5 +1,8 @@
-# n-dimensional tic-tac-toe
-# author: Spencer Hann - github.com/spencer-hann
+# n-dimensional tictactoe API for testing/training
+# intelligent agents
+
+# github.com/spencer-hann/NDimensional_TicTacToe_API
+# Author: Spencer Hann
 
 # cython: language_level=3
 
@@ -284,15 +287,11 @@ cdef class Game:
 
         self.board[marker_location] = self.marker
 
-        if self._endpoints[marker_location] == None:
-            self.board[marker_location] = '*'
-            return None
-
         for endpnt_pair in self._endpoints[marker_location]:
             if endpnt_pair not in self._lines:
                 self._lines[endpnt_pair] = point
             elif point * self._lines[endpnt_pair] < 0: # heterogenous line
-                self._lines[endpnt_pair] = 0
+                self._lines[endpnt_pair] = float("nan") # dead line
             else:
                 self._lines[endpnt_pair] += point
             if abs(self._lines[endpnt_pair]) == self.size:
@@ -301,8 +300,7 @@ cdef class Game:
                 return self.marker.decode("utf-8") # current player wins!!!
 
         if blank_square not in self.board:
-            print("Cat's game")
-            return 'C'
+            return 'C' # for Cat's game
 
         return None# scores updated, no winner yet
 
@@ -340,16 +338,16 @@ cdef class Game:
         else:
             self.marker = xmark
 
-        if move == None:
-            print(f"Player {self.marker}, make your move...")
-            move = input().strip()
+        #if move == None:
+        #    print(f"Player {self.marker}, make your move...")
+        #    move = input().strip()
 
-            if move[0] == '(': move = move[1:]
-            if move[-1] == ')': move = move[:-1]
-            if ',' in move: move = move.split(',')
-            else: move = move.split(' ')
+        #    if move[0] == '(': move = move[1:]
+        #    if move[-1] == ')': move = move[:-1]
+        #    if ',' in move: move = move.split(',')
+        #    else: move = move.split(' ')
 
-            move = map(int,move)
+        #    move = map(int,move)
 
         move = tuple(move)
 
@@ -393,6 +391,8 @@ cdef class Game:
             boards in higher dimensions """
         self.board.fill(blank_square)
 
+        self.marker = xmark
+
         for key in self._lines:
             self._lines[key] = 0
 
@@ -400,6 +400,8 @@ cdef class Game:
 
     def is_full(self):
         return blank_square not in self.board
+
+    #def is_unwinnable(self): pass
 
     def random_empty_square(self):
         r"""returns the location of random empty square as a
@@ -418,10 +420,10 @@ cdef class Game:
             i += 1
             if i == flat.shape[0]: # start from beginning
                 i = 0
-            if i == i_init: # made full loop with no blank squares
-                raise Exception("In `Game.random_empty_square`: game board is full")
             if flat[i] == blank_square: # done
                 break
+            if i == i_init: # made full loop with no blank squares
+                raise Exception("In `Game.random_empty_square`: game board is full")
 
         while coord_dim < self.dim:
             coord[coord_dim] = i // chunk
@@ -446,3 +448,38 @@ cdef class Game:
 #        new_seed[dim] = -1
 #        self.seeds.add(new_seed)
 #        self._gen_seeds(new_seed, dim+1)
+
+
+
+######################################################
+# HumanPlayer:                                       #
+#   Bonus class for users to play against each other #
+#   or against AIs                                   #
+######################################################
+
+global HumanPlayer_count
+HumanPlayer_count = 0
+
+class HumanPlayer:
+    def __init__(self,name=None):
+        global HumanPlayer_count
+        if name is None:
+            HumanPlayer_count += 1
+            self.name = f"Human Player {HumanPlayer_count}"
+        else:
+            self.name = name
+
+    # HumanPlayer.next_move does not need the game object
+    # However, the next_move function of other player objects might
+    # including the `game` parament allows HumanPlayer objects to
+    # interact with the game similarly to other player objects
+    def next_move(self,game=None):
+        print(f"{self.name}, make your move...")
+        move = input().strip()
+
+        if move[0] == '(': move = move[1:]
+        if move[-1] == ')': move = move[:-1]
+        if ',' in move: move = move.split(',')
+        else: move = move.split(' ')
+
+        return tuple(map(int,move))
