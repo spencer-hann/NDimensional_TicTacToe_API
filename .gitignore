@@ -1,0 +1,5 @@
+build
+numpy
+__pycache__
+*.c
+*.so
