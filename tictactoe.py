@@ -2,12 +2,12 @@
 # Author: Spencer Hann
 
 from tictactoe import Game, HumanPlayer
-from agents import NaiveBestFirstAgent, RandomAgent
+from agents import NaiveBestFirstAgent, RandomAgent, ReinforcementAgent
 
 
 def play_game(
         game,
-        players=[HumanPlayer(), NaiveBestFirstAgent('X', smart_block=True)],
+        players=(HumanPlayer(), NaiveBestFirstAgent('X', smart_block=True)),
         check_every_n_turns=500):
     assert len(players) == 2, 'Only two players'
 
@@ -31,7 +31,7 @@ def play_game(
 
 if __name__ == '__main__':
     print('Building game...', end=' ', flush=True)
-    g = Game(size=3, dim=9)
+    g = Game(size=3, dim=2)
     print('done!')
     winners = []
 
