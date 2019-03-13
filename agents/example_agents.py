@@ -5,12 +5,13 @@
 import numpy as np
 
 class RandomAgent:
-    def __init__(self):
+    def __init__(self, marker='X'):
         self.name = "Random"
+        self.marker = marker
 
     def next_move(self, game):
-        if game.is_full(): raise Exception\
-                ("Random Agent trying to play on full board")
+        if game.is_full():
+            raise Exception("Random Agent trying to play on full board")
         return tuple(game.random_empty_square())
         #while 1:
         #for i in range(100): # eventually just give up

@@ -327,8 +327,6 @@ cdef class Game:
         else:
             self.marker = xmark
 
-        move = tuple(move)
-
         if self.board[move] != blank_square:
             return -1
 
