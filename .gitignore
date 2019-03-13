@@ -3,3 +3,4 @@ numpy
 __pycache__
 *.c
 *.so
+.DS_STORE

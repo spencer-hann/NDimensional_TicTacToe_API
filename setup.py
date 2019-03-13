@@ -34,13 +34,15 @@ if len(sys.argv) == 1: # no command line args
 from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Build import cythonize
+from numpy import get_include
 print("   Cython may give a depricated NumPy API warning. This warning is safe to ignore.\n")
 setup(
     ext_modules = cythonize(
         Extension(
             module_name,
             [cy_name],
-            define_macros=[("NPY_NO_DEPRECATED_API",None)]
+            define_macros=[("NPY_NO_DEPRECATED_API",None)],
+            include_dirs=[get_include()]
         )
     )
 )

@@ -2,7 +2,6 @@
 # github.com/spencer-hann/NDimensional_TicTacToe_API
 # Author: Spencer Hann
 
-from tictactoe import Game
 import numpy as np
 
 class RandomAgent:
