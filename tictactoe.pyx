@@ -8,8 +8,7 @@
 
 import numpy as np
 cimport numpy as np
-import pandas as pd
-import sys
+from sys import stdout
 
 DEF blank_square = b'_'
 
@@ -340,18 +339,16 @@ cdef class Game:
             displayed about the board """
         if self.dim > 3: return # don't want to display in 4+ dimensions...
 
-        cdef np.ndarray str_board = self.board.astype(unicode)
-
         if turn_number is not False:
             print('-'*20,"Turn",turn_number,'-'*20)
 
         if self.dim < 3:
-            print(pd.DataFrame(str_board))
+            np.savetxt(stdout, self.board.astype(str), fmt='%s')
             return
 
         for i in range(self.size):
             print("\nLayer",i)
-            print(pd.DataFrame(str_board[i]))
+            np.savetxt(stdout, self.board[i].astype(str), fmt='%s')
 
     cpdef np.ndarray state(self):
         r"""returns a flattened copy of the game board as an np.ndarray"""
