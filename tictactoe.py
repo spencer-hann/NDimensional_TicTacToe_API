@@ -31,21 +31,18 @@ def play_game(
 
 if __name__ == '__main__':
     print('Building game...', end=' ', flush=True)
-    g = Game(size=3, dim=2)
+    game = Game(size=3, dim=2)
     print('done!')
+    players = [RandomAgent('X'), ReinforcementAgent('O')]
     winners = []
 
     for i in range(10):
+        game.new_game()
         # w = play_game(g)
         # w = play_game(g,players=[RandomAgent(), RandomAgent()])
         # w = play_game(g,players=[RandomAgent(), NaiveBestFirstAgent('X')])
-        w = play_game(
-            g,
-            players=[
-                RandomAgent(), NaiveBestFirstAgent('X', smart_block=True)
-            ]
-        )
-        g.new_game()
-        winners.append(w)
+        winner = play_game(game, players=players)
+        game.new_game()
+        winners.append(winner)
 
     print(winners)
