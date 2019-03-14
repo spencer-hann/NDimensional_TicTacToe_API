@@ -205,6 +205,7 @@ cdef class Game:
                 self._fill_in_endpoints(corner1, corner2)
 
         tmp = np.empty(self.dim, dtype=np.intc)
+        # this should be done recursively to work in dimensions >3
         for vec1 in self._unit_vectors:
             for vec2 in self._unit_vectors:
                 if np.array_equal(vec1,vec2): continue
@@ -360,6 +361,14 @@ cdef class Game:
         r"""returns a flattened copy of the game board converted
             into a `bytes` object for hashing """
         return bytes(self.board.flatten())
+
+    def get_score(self):
+        cdef int score = 0
+
+        for s in self._lines.values():
+            score += s
+
+        return score
 
     def new_game(self):
         r""" when a game is over, this will quickly clear the board
