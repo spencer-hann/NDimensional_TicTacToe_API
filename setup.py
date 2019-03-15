@@ -11,7 +11,7 @@ cy_name = module_name + ".pyx"
 
 # displays bar across console
 from os import popen
-_, console_width = popen('stty size', 'r').read().split()
+_, console_width = popen('stty size', 'r').read().split() or (0, 0) # Docker
 console_width = int(console_width)
 print('=' * console_width)
 
