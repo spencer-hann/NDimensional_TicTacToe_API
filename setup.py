@@ -35,7 +35,7 @@ from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Build import cythonize
 from numpy import get_include
-print("   Cython may give a depricated NumPy API warning. This warning is safe to ignore.\n")
+print("   Cython may give a deprecated NumPy API warning. This warning is safe to ignore.\n")
 setup(
     ext_modules = cythonize(
         Extension(
