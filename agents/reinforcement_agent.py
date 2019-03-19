@@ -2,6 +2,7 @@
 from collections import defaultdict
 
 import numpy as np
+from tqdm import tqdm
 
 from .example_agents import NaiveBestFirstAgent, RandomAgent
 from tictactoe import Game
@@ -9,7 +10,7 @@ from tictactoe import Game
 
 class ReinforcementAgent:
 
-    def __init__(self, marker='X', n=1000, m=200, eta=0.2, g=0.9, e=1):
+    def __init__(self, marker=b'X', n=10000, m=2000, eta=0.2, g=0.9, e=1):
         """
         Set initial values.
         :param marker: The marker this agent will use during the game
@@ -27,7 +28,7 @@ class ReinforcementAgent:
         self._eta = eta
         self._g = g
         self._e = e
-        self._opponent = RandomAgent(marker='O' if self.marker == 'X' else 'X')
+        self._opponent = RandomAgent(marker=b'O' if self.marker == b'X' else b'X')
         self._trained = False
 
     def _update_q_matrix(self, state, square, new_state, reward):
@@ -58,8 +59,8 @@ class ReinforcementAgent:
                 # Use score differential as reward value, taking into account
                 # 'O' wants a low score and 'X' wants a high score
                 score_delta = game.get_score() - prev_score
-                reward = -score_delta if self.marker == 'O' else score_delta
-            print(prev_score, game.get_score(), reward)
+                reward = -score_delta if self.marker == b'O' else score_delta
+            #print(prev_score, game.get_score(), reward)
             square = np.reshape(list(self.q_matrix[state]),
                                 [game.size for _ in range(game.dim)])[square]
             self._update_q_matrix(state, square, new_state, reward)
@@ -73,18 +74,20 @@ class ReinforcementAgent:
         })
         self._trained = True
         training_game = Game(size, dim)
-        for epoch in range(1, self._n + 1):
+        print(f"Training {self.name} Agent")
+        for epoch in tqdm(range(1, self._n + 1)):
             training_game.new_game()
-            print(f'Training epoch {epoch}')
+            #print(f'Training epoch {epoch}')
             self._act(training_game)
             if epoch % 50 == 0:
                 self._e = max(0.1, self._e - 0.01)
-        print()
+        #print()
 
     def next_move(self, game):
         """Determine the next move to make in the game. WIP."""
         if not self._trained:
             self._train(game.size, game.dim)
+            self._e = 0
         if game.is_full():
             raise Exception('Reinforcement Agent trying to play on full board')
         state = tuple(game.state())
