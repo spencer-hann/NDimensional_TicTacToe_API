@@ -1,7 +1,10 @@
 """An agent that acts based on reinforcement learning/Q-learning."""
+import pickle
 from collections import defaultdict
 
+import matplotlib.pyplot as plt
 import numpy as np
+from seaborn import set as set_style
 from tqdm import tqdm
 
 from .example_agents import NaiveBestFirstAgent, RandomAgent
@@ -10,7 +13,7 @@ from tictactoe import Game
 
 class ReinforcementAgent:
 
-    def __init__(self, marker=b'X', n=10000, m=2000, eta=0.2, g=0.9, e=1):
+    def __init__(self, marker=b'X', n=10000, m=20000, eta=0.1, g=0.9, e=1):
         """
         Set initial values.
         :param marker: The marker this agent will use during the game
@@ -28,8 +31,14 @@ class ReinforcementAgent:
         self._eta = eta
         self._g = g
         self._e = e
-        self._opponent = RandomAgent(marker=b'O' if self.marker == b'X' else b'X')
-        self._trained = False
+        self._opponent = NaiveBestFirstAgent(marker=b'O' if self.marker == b'X' else b'X')
+        self._q_matrix = None
+
+        # Set plot styles
+        set_style()
+        plt.title('Total Reward Over Time')
+        plt.xlabel('Epoch')
+        plt.ylabel('Reward')
 
     def _update_q_matrix(self, state, square, new_state, reward):
         """Update the q_matrix using a predetermined update formula."""
@@ -41,6 +50,7 @@ class ReinforcementAgent:
 
     def _act(self, game):
         """Perform a single round of actions on the game. WIP."""
+        total_reward = 0
         for _ in range(self._m):
             if game.game_over or game.is_full():
                 break
@@ -58,32 +68,57 @@ class ReinforcementAgent:
             else:
                 # Use score differential as reward value, taking into account
                 # 'O' wants a low score and 'X' wants a high score
-                score_delta = game.get_score() - prev_score
+                score_delta = 5 * (game.get_score() - prev_score)
                 reward = -score_delta if self.marker == b'O' else score_delta
+            total_reward += reward
             square = np.reshape(list(self._q_matrix[state]),
                                 [game.size for _ in range(game.dim)])[square]
             self._update_q_matrix(state, square, new_state, reward)
             if not (game.game_over or game.is_full()):
                 game.take_turn(self._opponent.next_move(game))
+        return total_reward
 
     def _train(self, size, dim):
         """Train the agent on a game with the given size and dimensions."""
-        self._q_matrix = defaultdict(lambda: {
-            square: 0 for square in range(pow(size, dim))
-        })
-        self._trained = True
+        try:
+            file = f"{'x'.join([str(size)] * dim)}n{self._n}m{self._m}eta{self._eta}"
+            print('Creating q-matrix from pickle... ', end='', flush=True)
+            with open(f'{file}.pickle', 'rb') as f:
+                self._q_matrix = defaultdict(lambda: {
+                    square: 0 for square in range(pow(size, dim))
+                }, pickle.load(f))
+        except FileNotFoundError:
+            print('pickle not found, training agent')
+            self._q_matrix = defaultdict(lambda: {
+                square: 0 for square in range(pow(size, dim))
+            })
+        else:
+            print('done')
+            return
         training_game = Game(size, dim)
+        rewards = []
         print(f'Training {self.name} Agent')
         for epoch in tqdm(range(1, self._n + 1)):
             training_game.new_game()
-            self._act(training_game)
+            reward = self._act(training_game)
+            if epoch % 100 == 0:
+                rewards.append((epoch, reward))
             if epoch % 50 == 0:
-                self._e = max(0.1, self._e - 0.01)
+                self._e = max(0.1, self._e - 0.0001)
+        file = f"{'x'.join([str(size)] * dim)}n{self._n}m{self._m}eta{self._eta}"
+        print('Pickling q-matrix... ', end='', flush=True)
+        with open(f'{file}.pickle',
+                  'wb') as f:
+            pickle.dump(dict(self._q_matrix), f)
+        print('done')
+        plt.plot(*zip(*rewards))
+        plt.show()
 
     def next_move(self, game):
         """Determine the next move to make in the game. WIP."""
-        if not self._trained:
-            self._train(game.size, game.dim)
+        size, dim = game.size, game.dim
+        if self._q_matrix is None:
+            self._train(size, dim)
             self._e = 0
         if game.is_full():
             raise Exception('Reinforcement Agent trying to play on full board')

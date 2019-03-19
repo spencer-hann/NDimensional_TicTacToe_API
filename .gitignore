@@ -4,3 +4,4 @@ __pycache__
 *.c
 *.so
 .DS_STORE
+*.pickle

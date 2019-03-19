@@ -28,10 +28,9 @@ def play_game(game, players):
 
 if __name__ == '__main__':
     print('Building game...', end=' ', flush=True)
-    game = Game(size=5, dim=2)
+    game = Game(size=4, dim=3)
     print('done!')
     players = [ReinforcementAgent(b'O'), NaiveBestFirstAgent(b'X')]
-    #players = [RandomAgent(b'X'), ReinforcementAgent(b'O')]
     winners = []
 
     for i in range(10):
