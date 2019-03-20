@@ -13,7 +13,7 @@ from tictactoe import Game
 
 class ReinforcementAgent:
 
-    def __init__(self, marker=b'X', n=10000, m=20000, eta=0.1, g=0.9, e=1):
+    def __init__(self, marker=b'X', n=10000, m=20000, eta=0.0001, g=0.9, e=1):
         """
         Set initial values.
         :param marker: The marker this agent will use during the game
@@ -31,7 +31,7 @@ class ReinforcementAgent:
         self._eta = eta
         self._g = g
         self._e = e
-        self._opponent = NaiveBestFirstAgent(marker=b'O' if self.marker == b'X' else b'X')
+        self._opponent = RandomAgent(marker=b'O' if self.marker == b'X' else b'X')
         self._q_matrix = None
 
         # Set plot styles
@@ -68,7 +68,8 @@ class ReinforcementAgent:
             else:
                 # Use score differential as reward value, taking into account
                 # 'O' wants a low score and 'X' wants a high score
-                score_delta = 5 * (game.get_score() - prev_score)
+                # score_delta = 5 * (game.get_score() - prev_score)
+                score_delta = game.get_score() - prev_score
                 reward = -score_delta if self.marker == b'O' else score_delta
             total_reward += reward
             square = np.reshape(list(self._q_matrix[state]),
@@ -101,16 +102,15 @@ class ReinforcementAgent:
         for epoch in tqdm(range(1, self._n + 1)):
             training_game.new_game()
             reward = self._act(training_game)
-            if epoch % 100 == 0:
-                rewards.append((epoch, reward))
+            rewards.append((epoch, reward))
             if epoch % 50 == 0:
-                self._e = max(0.1, self._e - 0.0001)
+                self._e = max(0.1, self._e - 0.1)
         file = f"{'x'.join([str(size)] * dim)}n{self._n}m{self._m}eta{self._eta}"
-        print('Pickling q-matrix... ', end='', flush=True)
-        with open(f'{file}.pickle',
-                  'wb') as f:
-            pickle.dump(dict(self._q_matrix), f)
-        print('done')
+        # print('Pickling q-matrix... ', end='', flush=True)
+        # with open(f'{file}.pickle',
+        #           'wb') as f:
+        #     pickle.dump(dict(self._q_matrix), f)
+        # print('done')
         plt.plot(*zip(*rewards))
         plt.show()
 
