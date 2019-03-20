@@ -54,7 +54,7 @@ class NaiveBestFirstAgent:
 
 class RuleBasedAgent:
     def __init__(self, marker, skill_level=3):
-        self.name = "Rule-Based"
+        self.name = f"Rule-Based level{skill_level}"
         self.marker = marker
         self.skill_level = skill_level
 

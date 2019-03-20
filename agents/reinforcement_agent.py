@@ -10,7 +10,7 @@ from tictactoe import Game
 
 class ReinforcementAgent:
 
-    def __init__(self, marker=b'X', n=10000, m=2000, eta=0.2, g=0.9, e=1):
+    def __init__(self, marker=b'O', n=10000, m=20000, eta=0.2, g=0.9, e=1, epsilon_switch=False):
         """
         Set initial values.
         :param marker: The marker this agent will use during the game
@@ -21,13 +21,18 @@ class ReinforcementAgent:
         :param e: Epsilon; how likely the agent is to perform a random action
         :param opponent: Adversary to play against during training
         """
-        self.name = "Reinforcement Learning"
+        if epsilon_switch:
+            self.name = "Reinforcement Learning epsilon"
+        else:
+            self.name = "Reinforcement Learning"
+        self.q_matrix = None
         self.marker = marker
         self._n = n
         self._m = m
         self._eta = eta
         self._g = g
-        self._e = e
+        self._e_init = e
+        self.epsilon_switch = epsilon_switch
         self._opponent = RandomAgent(marker=b'O' if self.marker == b'X' else b'X')
         self._trained = False
 
@@ -69,9 +74,10 @@ class ReinforcementAgent:
 
     def _train(self, size, dim):
         """Train the agent on a game with the given size and dimensions."""
-        self.q_matrix = defaultdict(lambda: {
-            square: 0 for square in range(pow(size, dim))
-        })
+        if self.q_matrix is None:
+            self.q_matrix = defaultdict(lambda: {
+                square: 0 for square in range(pow(size, dim))
+            })
         self._trained = True
         training_game = Game(size, dim)
         print(f"Training {self.name} Agent")
@@ -86,10 +92,12 @@ class ReinforcementAgent:
     def next_move(self, game):
         """Determine the next move to make in the game. WIP."""
         if not self._trained:
+            self._e = self._e_init
             self._train(game.size, game.dim)
             self._e = 0
         if game.is_full():
             raise Exception('Reinforcement Agent trying to play on full board')
+        if self.epsilon_switch and np.random.rand() < self._e: return tuple(game.random_empty_square())
         state = tuple(game.state())
         square = max(self.q_matrix[state].items(), key=lambda x: x[1])[0]
         for square, _ in sorted(self.q_matrix[state].items(),
