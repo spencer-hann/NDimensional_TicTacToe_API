@@ -68,7 +68,6 @@ class ReinforcementAgent:
             else:
                 # Use score differential as reward value, taking into account
                 # 'O' wants a low score and 'X' wants a high score
-                # score_delta = 5 * (game.get_score() - prev_score)
                 score_delta = game.get_score() - prev_score
                 reward = -score_delta if self.marker == b'O' else score_delta
             total_reward += reward
@@ -84,7 +83,7 @@ class ReinforcementAgent:
         try:
             file = f"{'x'.join([str(size)] * dim)}n{self._n}m{self._m}eta{self._eta}"
             print('Creating q-matrix from pickle... ', end='', flush=True)
-            with open(f'{file}.pickle', 'rb') as f:
+            with open(f'pickles/{file}.pickle', 'rb') as f:
                 self._q_matrix = defaultdict(lambda: {
                     square: 0 for square in range(pow(size, dim))
                 }, pickle.load(f))
