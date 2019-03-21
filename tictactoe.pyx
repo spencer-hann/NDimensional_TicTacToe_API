@@ -277,7 +277,7 @@ cdef class Game:
             if endpnt_pair not in self._lines:
                 self._lines[endpnt_pair] = point
             elif point * self._lines[endpnt_pair] < 0: # heterogenous line
-                self._lines[endpnt_pair] = 0 # dead line
+                self._lines[endpnt_pair] = float("nan") # dead line
             else:
                 self._lines[endpnt_pair] += point
             if abs(self._lines[endpnt_pair]) == self.size:
@@ -358,7 +358,8 @@ cdef class Game:
         cdef int score = 0
 
         for s in self._lines.values():
-            score += s
+            if s == s:  # Check for NaN
+                score += s
 
         return score
 
