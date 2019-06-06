@@ -432,6 +432,29 @@ cdef class Game:
 #        self._gen_seeds(new_seed, dim+1)
 
 
+######################################################
+# Agent:                                             #
+#   Template for intelligent agents to play the game #
+#   (see HumanPlayer below for example)              #
+######################################################
+
+class Agent:
+    def __init__(self, marker, name=None):
+        if name == None:
+            name = f'Agent {marker}'
+
+        print(type(xmark))
+        marker = bytes(marker, 'ascii')
+
+        assert marker == xmark or marker == omark, \
+            f'invalid marker, must be {xmark} or {omark}'
+
+        self.name = name
+        self.marker = marker
+
+    def next_move(self, game):
+        raise NotImplementedError
+
 
 ######################################################
 # HumanPlayer:                                       #
@@ -439,17 +462,11 @@ cdef class Game:
 #   or against AIs                                   #
 ######################################################
 
-global HumanPlayer_count
-HumanPlayer_count = 0
-
-class HumanPlayer:
-    def __init__(self,name=None):
-        global HumanPlayer_count
+class HumanPlayer(Agent):
+    def __init__(self, marker, name=None):
         if name is None:
-            HumanPlayer_count += 1
-            self.name = f"Human Player {HumanPlayer_count}"
-        else:
-            self.name = name
+            name = f"Human Player {marker}"
+        super().__init__(marker, name)
 
     # HumanPlayer.next_move does not need the game object
     # However, the next_move function of other player objects might

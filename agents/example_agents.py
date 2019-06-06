@@ -3,21 +3,20 @@
 # Author: Spencer Hann
 
 import numpy as np
+from tictactoe import Agent
 
-class RandomAgent:
-    def __init__(self, marker='X'):
-        self.name = "Random"
-        self.marker = marker
+class RandomAgent(Agent):
+    def __init__(self, marker, name="Random"):
+        super().__init__(marker, name)
 
     def next_move(self, game):
         if game.is_full():
             raise Exception("Random Agent trying to play on full board")
         return tuple(game.random_empty_square())
 
-class NaiveBestFirstAgent:
-    def __init__(self, marker):
-        self.name = "Naive Best First"
-        self.marker = marker
+class NaiveBestFirstAgent(Agent):
+    def __init__(self, marker, name="Naive Best First"):
+        super().__init__(marker, name)
 
     def next_move(self, game):
         best_endpair = None
@@ -52,11 +51,13 @@ class NaiveBestFirstAgent:
 
         return tuple(game.random_empty_square())
 
-class RuleBasedAgent:
-    def __init__(self, marker, skill_level=3):
-        self.name = f"Rule-Based level{skill_level}"
-        self.marker = marker
+class RuleBasedAgent(Agent):
+    def __init__(self, marker, name=None, skill_level=3):
         self.skill_level = skill_level
+
+        if name == None:
+            name = f"Rule-Based level{skill_level}"
+        super().__init__(marker, name)
 
     def next_move(self, game):
         best_endpair = None
